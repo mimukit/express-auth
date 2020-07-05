@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 
+const db = require('./db');
+
 const app = express();
 
 // app config middlewares
@@ -19,7 +21,15 @@ app.use(cors());
 
 const port = process.env.PORT || 4000;
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res, next) => {
+  try {
+    const [results] = await db.query('SELECT 1;');
+    console.log(results);
+  } catch (error) {
+    res.status(500);
+    next(error);
+  }
+
   res.json({
     message: 'hello world',
   });
