@@ -24,6 +24,8 @@ app.use(cors());
 
 const port = process.env.PORT || 4000;
 
+const generateOtp = () => Math.floor(1000 + Math.random() * 9000);
+
 // register
 app.post('/api/register', async (req, res, next) => {
   const inputData = req.body;
@@ -126,7 +128,119 @@ app.post('/api/loginWithEmail', async (req, res, next) => {
 
 // TODO: login with phone & otp
 
-//
+app.post('/api/loginWithPhone', async (req, res, next) => {
+  const inputData = req.body; // email pass
+
+  // input data validation
+  const loginWithPhoneSchema = yup.object().shape({
+    phone: yup.string().min(11).required(),
+  });
+
+  try {
+    await loginWithPhoneSchema.validate(inputData);
+  } catch (error) {
+    res.status(400);
+    next(error);
+  }
+
+  const { phone } = inputData;
+
+  // TODO: format phone number
+
+  try {
+    // user exists & get data
+    const [user] = await db.query('SELECT * FROM users WHERE phone=?', [phone]);
+
+    if (!user.length) {
+      const error = new Error('User not found');
+      res.status(404);
+      next(error);
+    }
+
+    // gernerate opt & save to db
+
+    const otp = generateOtp();
+
+    const [
+      result,
+    ] = await db.query(
+      'UPDATE `expressAuth`.`users` SET `opt` = ? WHERE `id` = ?;',
+      [otp, user[0].id]
+    );
+
+    console.info(`OTP for user: ${otp}`);
+
+    // return response
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(500);
+    next(error);
+  }
+});
+
+// validate phone otp
+
+app.post('/api/validateOtp', async (req, res, next) => {
+  const inputData = req.body; // phone otp
+
+  // input data validation
+  const validateOtpSchema = yup.object().shape({
+    phone: yup.string().min(11).required(),
+    otp: yup.string().min(4).required(),
+  });
+
+  try {
+    await validateOtpSchema.validate(inputData);
+  } catch (error) {
+    res.status(400);
+    next(error);
+  }
+
+  const { phone, otp } = inputData;
+
+  // TODO: format phone number
+
+  try {
+    // user exists & get data
+    const [user] = await db.query('SELECT * FROM users WHERE phone=?', [phone]);
+
+    if (!user.length) {
+      const error = new Error('User not found');
+      res.status(404);
+      next(error);
+    }
+
+    // match otp
+
+    if (!user[0].opt) {
+      const error = new Error('Login failed.');
+      res.status(400);
+      next(error);
+    }
+
+    const isValidOtp = otp.toString() === user[0].opt.toString();
+
+    if (!isValidOtp) {
+      const error = new Error('Login failed.');
+      res.status(400);
+      next(error);
+    }
+
+    // generate jwt token
+    const token = jwt.sign({ userId: user[0].id }, process.env.JWT_SECRET);
+
+    // return response
+    res.json({
+      success: true,
+      token,
+    });
+  } catch (error) {
+    res.status(500);
+    next(error);
+  }
+});
 
 // Not found middleware
 app.use((req, res, next) => {
