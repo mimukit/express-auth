@@ -43,6 +43,7 @@ app.post('/api/register', async (req, res, next) => {
   } catch (error) {
     res.status(400);
     next(error);
+    return;
   }
 
   const { name, phone, email, password } = inputData;
@@ -89,6 +90,7 @@ app.post('/api/loginWithEmail', async (req, res, next) => {
   } catch (error) {
     res.status(400);
     next(error);
+    return;
   }
 
   const { email, password } = inputData;
@@ -101,6 +103,7 @@ app.post('/api/loginWithEmail', async (req, res, next) => {
       const error = new Error('User not found');
       res.status(404);
       next(error);
+      return;
     }
 
     // pass validate
@@ -110,6 +113,7 @@ app.post('/api/loginWithEmail', async (req, res, next) => {
       const error = new Error('Login failed.');
       res.status(400);
       next(error);
+      return;
     }
 
     // generate jwt token
@@ -122,11 +126,10 @@ app.post('/api/loginWithEmail', async (req, res, next) => {
     });
   } catch (error) {
     res.status(500);
-    next(error);
   }
 });
 
-// TODO: login with phone & otp
+// login with phone & otp
 
 app.post('/api/loginWithPhone', async (req, res, next) => {
   const inputData = req.body; // email pass
@@ -141,6 +144,7 @@ app.post('/api/loginWithPhone', async (req, res, next) => {
   } catch (error) {
     res.status(400);
     next(error);
+    return;
   }
 
   const { phone } = inputData;
@@ -155,6 +159,7 @@ app.post('/api/loginWithPhone', async (req, res, next) => {
       const error = new Error('User not found');
       res.status(404);
       next(error);
+      return;
     }
 
     // gernerate opt & save to db
@@ -196,6 +201,7 @@ app.post('/api/validateOtp', async (req, res, next) => {
   } catch (error) {
     res.status(400);
     next(error);
+    return;
   }
 
   const { phone, otp } = inputData;
@@ -210,6 +216,7 @@ app.post('/api/validateOtp', async (req, res, next) => {
       const error = new Error('User not found');
       res.status(404);
       next(error);
+      return;
     }
 
     // match otp
@@ -218,6 +225,7 @@ app.post('/api/validateOtp', async (req, res, next) => {
       const error = new Error('Login failed.');
       res.status(400);
       next(error);
+      return;
     }
 
     const isValidOtp = otp.toString() === user[0].opt.toString();
@@ -226,6 +234,7 @@ app.post('/api/validateOtp', async (req, res, next) => {
       const error = new Error('Login failed.');
       res.status(400);
       next(error);
+      return;
     }
 
     // generate jwt token
@@ -241,6 +250,8 @@ app.post('/api/validateOtp', async (req, res, next) => {
     next(error);
   }
 });
+
+// TODO: /api/me
 
 // Not found middleware
 app.use((req, res, next) => {
