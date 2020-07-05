@@ -237,6 +237,8 @@ app.post('/api/validateOtp', async (req, res, next) => {
       return;
     }
 
+    // TODO: remove otp from db if success
+
     // generate jwt token
     const token = jwt.sign({ userId: user[0].id }, process.env.JWT_SECRET);
 
@@ -251,7 +253,50 @@ app.post('/api/validateOtp', async (req, res, next) => {
   }
 });
 
-// TODO: /api/me
+// user details api
+
+app.get('/api/me', async (req, res, next) => {
+  // check authorized
+  const tokenHeader = req.headers.authorization || '';
+
+  if (!tokenHeader) {
+    const error = new Error('Unauthorized');
+    res.status(401);
+    next(error);
+    return;
+  }
+
+  const token = tokenHeader.replace('Bearer ', '');
+  const { userId } = jwt.verify(token, process.env.JWT_SECRET);
+
+  // get logged user from db
+
+  try {
+    // get user data if found
+    const [
+      user,
+    ] = await db.query(
+      'SELECT name, phone, email, createdAt FROM users WHERE id=?',
+      [userId]
+    );
+
+    if (!user.length) {
+      const error = new Error('No data found');
+      res.status(404);
+      next(error);
+      return;
+    }
+
+    // return response
+    res.json({
+      success: true,
+      user: user[0],
+    });
+  } catch (error) {
+    res.status(500);
+    next(error);
+  }
+});
 
 // Not found middleware
 app.use((req, res, next) => {
